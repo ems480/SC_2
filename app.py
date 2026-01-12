@@ -54,8 +54,8 @@ def create_payment_link():
         "auth_id": os.getenv("MONEYUNIFY_AUTH_ID"),
         "amount": str(amount),
         "description": description,
-        "is_fixed_amount": "true",
-        "is_once_off": "true"
+        "is_fixed_amount": "false",
+        "is_once_off": "false"
     }
     if phone:
         payload["phone_number"] = phone
@@ -244,6 +244,7 @@ if __name__ == "__main__":
 #         return jsonify({"status": status})
 
 #     return jsonify(result), 400
+
 
 
 
