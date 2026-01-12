@@ -38,33 +38,44 @@ def home():
 @app.route("/create_payment_link", methods=["POST"])
 def create_payment_link():
     data = request.json
-    phone = data.get("phone_number")  # optional
+    phone = data.get("phone_number")
     amount = data.get("amount")
     description = data.get("description", "StudyCraft Payment")
 
     if not amount:
         return jsonify({"error": "amount is required"}), 400
 
-    # MoneyUnify expects FORM-ENCODED payload and "true"/"false" strings
+    # MoneyUnify requires form-encoded payload and 'true'/'false' as strings
     payload = {
         "auth_id": MONEYUNIFY_AUTH_ID,
-        "amount": str(amount),             # string
+        "amount": str(amount),           # string
         "description": description,
-        "is_fixed_amount": "true",         # string, NOT boolean
-        "is_once_off": "true"              # string, NOT boolean
+        "is_fixed_amount": "true",       # string, NOT boolean
+        "is_once_off": "true"            # string, NOT boolean
     }
 
     if phone:
         payload["phone_number"] = phone
 
-    # Form-encoded POST
-    r = requests.post("https://api.moneyunify.one/links/create", data=payload)
-    result = r.json()
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    # Use data=payload + headers
+    r = requests.post(
+        "https://api.moneyunify.one/links/create",
+        data=payload,
+        headers=headers
+    )
+
+    try:
+        result = r.json()
+    except Exception:
+        return jsonify({"error": "Invalid response from MoneyUnify", "raw": r.text}), 500
 
     if not result.get("isError"):
         payment_url = result["data"]["payment_url"]
         reference = result["data"].get("unique_id")
 
+        # Save to DB
         conn = sqlite3.connect(DB_PATH)
         conn.execute(
             "INSERT OR IGNORE INTO payments (reference, payment_url) VALUES (?, ?)",
@@ -246,3 +257,4 @@ if __name__ == "__main__":
 #         return jsonify({"status": status})
 
 #     return jsonify(result), 400
+
