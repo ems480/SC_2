@@ -35,49 +35,41 @@ init_db()
 def home():
     return jsonify({"status": "running"})
 
-
 @app.route("/create_payment_link", methods=["POST"])
 def create_payment_link():
-    """
-    Creates a MoneyUnify payment link via /links/create
-    """
     data = request.json
-    phone = data.get("phone_number")  # optional: link can be generic
+    phone = data.get("phone_number")
     amount = data.get("amount")
     description = data.get("description", "StudyCraft Payment")
 
     if not amount:
         return jsonify({"error": "amount is required"}), 400
 
+    # Form-encoded payload
     payload = {
-    "auth_id": MONEYUNIFY_AUTH_ID,
-    "amount": amount,
-    "description": description,
-    "is_fixed_amount": True,   # <-- boolean
-    "is_once_off": True,       # <-- boolean
+        "auth_id": MONEYUNIFY_AUTH_ID,
+        "amount": str(amount),             # must be string
+        "description": description,
+        "is_fixed_amount": "true",         # string, NOT boolean
+        "is_once_off": "true"              # string, NOT boolean
     }
 
-    # payload = {
-    #     "auth_id": MONEYUNIFY_AUTH_ID,
-    #     "amount": amount,
-    #     "description": description,
-    #     "is_fixed_amount": "true",
-    #     "is_once_off": "true",
-    # }
+    if phone:
+        payload["phone_number"] = phone
 
-    # Send to MoneyUnify
+    # Use data=payload, not json=payload
     r = requests.post(
         "https://api.moneyunify.one/links/create",
         data=payload
     )
+
     result = r.json()
 
-    # If MoneyUnify succeeded
     if not result.get("isError"):
         payment_url = result["data"]["payment_url"]
-        # Use unique_id or reference
         reference = result["data"].get("unique_id")
 
+        # Save to SQLite
         conn = sqlite3.connect(DB_PATH)
         conn.execute(
             "INSERT OR IGNORE INTO payments (reference, payment_url) VALUES (?, ?)",
@@ -92,6 +84,7 @@ def create_payment_link():
         })
 
     return jsonify(result), 400
+
 
 
 @app.route("/verify_payment/<reference>", methods=["GET"])
@@ -181,5 +174,6 @@ def verify_payment(reference):
 #             "isError": True,
 #             "message": str(e)
 #         }), 500
+
 
 
