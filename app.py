@@ -50,12 +50,20 @@ def create_payment_link():
         return jsonify({"error": "amount is required"}), 400
 
     payload = {
-        "auth_id": MONEYUNIFY_AUTH_ID,
-        "amount": amount,
-        "description": description,
-        "is_fixed_amount": "true",
-        "is_once_off": "true",
+    "auth_id": MONEYUNIFY_AUTH_ID,
+    "amount": amount,
+    "description": description,
+    "is_fixed_amount": True,   # <-- boolean
+    "is_once_off": True,       # <-- boolean
     }
+
+    # payload = {
+    #     "auth_id": MONEYUNIFY_AUTH_ID,
+    #     "amount": amount,
+    #     "description": description,
+    #     "is_fixed_amount": "true",
+    #     "is_once_off": "true",
+    # }
 
     # Send to MoneyUnify
     r = requests.post(
@@ -173,4 +181,5 @@ def verify_payment(reference):
 #             "isError": True,
 #             "message": str(e)
 #         }), 500
+
 
