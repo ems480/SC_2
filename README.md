@@ -1,2 +1,3 @@
-# SC_2
-component of sc
+StudyCraft Payment Server
+
+Flask backend for MoneyUnify payment verification.
