@@ -32,9 +32,13 @@ with db() as conn:
 # -----------------------------------------
 @app.route("/request_payment", methods=["POST"])
 def request_payment():
-    data = request.get_json()
-    phone = data["phone"]
-    amount = data["amount"]
+    data = request.get_json(force=True)  # force=True ensures JSON is parsed
+    # accept either "phone" or "phone_number"
+    phone = data.get("phone") or data.get("phone_number")
+    amount = data.get("amount")
+
+    if not phone or not amount:
+        return {"error": "phone and amount are required"}, 400
 
     tx_id = str(uuid.uuid4())
 
@@ -61,6 +65,38 @@ def request_payment():
         "transaction_id": tx_id,
         "moneyunify": r.json()
     })
+
+# @app.route("/request_payment", methods=["POST"])
+# def request_payment():
+#     data = request.get_json()
+#     phone = data["phone"]
+#     amount = data["amount"]
+
+#     tx_id = str(uuid.uuid4())
+
+#     with db() as conn:
+#         conn.execute(
+#             "INSERT INTO payments VALUES (?, ?, ?, ?)",
+#             (tx_id, phone, amount, "PENDING")
+#         )
+
+#     payload = {
+#         "from_payer": phone,
+#         "amount": amount,
+#         "auth_id": MONEYUNIFY_AUTH_ID,
+#         "reference": tx_id
+#     }
+
+#     r = requests.post(
+#         f"{BASE_URL}/payments/request",
+#         data=payload,
+#         headers={"Content-Type": "application/x-www-form-urlencoded"}
+#     )
+
+#     return jsonify({
+#         "transaction_id": tx_id,
+#         "moneyunify": r.json()
+#     })
 
 # -----------------------------------------
 # WEBHOOK
@@ -221,3 +257,4 @@ if __name__ == "__main__":
 # # -------------------------------------------------
 # if __name__ == "__main__":
 #     app.run()
+
